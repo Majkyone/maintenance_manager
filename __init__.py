@@ -66,5 +66,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry):
     storage = hass.data.get(DOMAIN, {}).get("storage")
     if storage:
-        await storage.async_clear_all()
+        storage.async_clear_all()
     hass.data.pop(DOMAIN, None)

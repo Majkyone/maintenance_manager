@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import attrs
 
 @attrs.define
@@ -27,7 +29,7 @@ class HomeMaintananceTask:
     last_completed: str = ""
     option: str = ""
 
-    EDITABLE_FIELDS = (
+    EDITABLE_FIELDS: ClassVar[tuple[str, ...]] = (
         "name",
         "value",
         "sensor",

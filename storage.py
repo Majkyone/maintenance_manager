@@ -37,11 +37,10 @@ class HomeMaintananceStorage:
     def get_all_history(self):
         return list(self.history.values())
 
-    async def async_clear_all(self):
+    def async_clear_all(self):
         self.history.clear()
         self.tasks.clear()
-        await self.store.async_save({"tasks": []})
-        await self.store.async_save({"history": []})
+        self._async_save_task_history()
 
     def async_create_task(self, task: HomeMaintananceTask):
         self.tasks[task.id] = task
@@ -50,6 +49,7 @@ class HomeMaintananceStorage:
 
     def async_notified_task(self, task_id: str, notified: bool, next_notification: str = None):
         if task_id not in self.tasks:
+            _LOGGER.warning("Attempted to update notification state for non-existent task_id: %s", task_id)
             return False
         
         task = self.tasks[task_id]
@@ -105,6 +105,7 @@ class HomeMaintananceStorage:
 
     def async_delete_task(self, task_id: str):
         if task_id not in self.tasks:
+            _LOGGER.warning("Attempted to delete non-existent task_id: %s", task_id)
             return False
         self.tasks.pop(task_id)
         if task_id in self.history:
@@ -135,9 +136,10 @@ class HomeMaintananceStorage:
             if field == "next_due" and existing.notified:
                 continue
             if field == "next_due" and existing.seasonal_type == "runtime":
-                delta = task.seasonal_interval - old_interval
-                existing.next_due += delta * 3600 # prepisat na hours * 3600
-                continue
+                if existing.next_due.lstrip('-').isdigit():
+                    delta = task.seasonal_interval - old_interval
+                    existing.next_due += delta * 3600 # prepisat na hours * 3600
+                    continue
             if getattr(existing, field) != new_value:
                 setattr(existing, field, new_value)
         self._async_save_task_history()
@@ -160,8 +162,7 @@ class HomeMaintananceStorage:
 
         domain = state.entity_id.split(".")[0]
         attrs = state.attributes
-        # is_on vymysliet
-        
+
         found = [
             item for item in MAPPING
             if domain in item["domain"] and (

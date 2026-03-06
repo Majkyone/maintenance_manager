@@ -244,3 +244,11 @@ If Home Assistant is turned off:
 - No notifications are sent.
 
 All logic depends on Home Assistant being active.
+
+## 🔒 Security
+
+This integration was designed with privacy in mind:
+
+- **No external communication** — integration never sends data outside of Home Assistant
+- **Local storage only** — all data stays in HA storage
+- **No cloud dependency** — works fully offline

@@ -13,7 +13,7 @@ class MaintananceCoordinator(DataUpdateCoordinator):
             hass,
             logger=_LOGGER,
             name=f"{DOMAIN}_coordinator",
-            update_interval=timedelta(seconds=10),
+            update_interval=timedelta(minutes=1),
         )
         self.notify_service = None
         self.storage = None
@@ -42,6 +42,7 @@ class MaintananceCoordinator(DataUpdateCoordinator):
             condition_met = False
             state_obj = self.hass.states.get(task.sensor)
             if state_obj is None:
+                _LOGGER.warning("Sensor %s not found for task %s", task.sensor, task.name)
                 continue
             options = ["activity", "action", "states", "turn_on", "condition"]
             value_to_check = state_obj.attributes.get(task.option) if task.option and task.option not in options else None
@@ -52,6 +53,7 @@ class MaintananceCoordinator(DataUpdateCoordinator):
                 try:
                     value_to_check = float(value_to_check)
                 except (ValueError, TypeError):
+                    _LOGGER.warning("Value for sensor %s is not a number: %s", task.sensor, value_to_check)
                     continue
 
                 if task.operator == "below" and value_to_check < task.value:

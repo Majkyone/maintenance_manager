@@ -17,8 +17,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     storage = hass.data[DOMAIN].get("storage")
     coordinator = hass.data[DOMAIN].get("coordinator")
     if not storage:
+        _LOGGER.error("Storage not found in hass.data for domain %s", DOMAIN)
         return
-    
+
+    if not coordinator:
+        _LOGGER.error("Coordinator not found in hass.data for domain %s", DOMAIN)
+        return
+
     for task in storage.get_all_tasks():
         sensor = TaskSensor(hass, coordinator, task)
         async_add_entities([sensor])
@@ -65,6 +70,7 @@ class TaskSensor(CoordinatorEntity, BinarySensorEntity):
         )
     def _handle_task_state_change(self, task_id: str, state: bool):
         if task_id != self._id:
+            _LOGGER.warning("Received state change for task_id %s, but expected %s", task_id, self._id)
             return
         self._attr_is_on = state
         self.schedule_update_ha_state()

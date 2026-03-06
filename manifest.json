@@ -2,7 +2,7 @@
   "domain": "maintenance_manager",
   "name": "Maintenance Manager",
   "version": "1.0",
-  "documentation": "https://example.com",
+  "documentation": "https://github.com/Majkyone/Maintenance-Manager/",
   "requirements": [],
   "dependencies": [],
   "codeowners": ["@Majky"],
