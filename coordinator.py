@@ -122,5 +122,6 @@ class MaintananceCoordinator(DataUpdateCoordinator):
             {
                 "title": f"Home Maintenance: {task.name}",
                 "message": f"{task.description}",
+                "notification_id": f"maintenance_manager_{task.id}",
             },
         )

@@ -136,7 +136,7 @@ class HomeMaintananceStorage:
             if field == "next_due" and existing.notified:
                 continue
             if field == "next_due" and existing.seasonal_type == "runtime":
-                if existing.next_due.lstrip('-').isdigit():
+                if isinstance(existing.next_due, (int, float)):
                     delta = task.seasonal_interval - old_interval
                     existing.next_due += delta * 3600 # prepisat na hours * 3600
                     continue

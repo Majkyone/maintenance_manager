@@ -16,6 +16,7 @@ _LOGGER = logging.getLogger("custom_components.maintenance_manager")
 async def async_setup(hass: HomeAssistant, config: dict):
     """Initial setup of the integration (empty if only Config Flow)."""
     # Inicializácia dátového priestoru
+    await async_register_websocket(hass)
     
     return True
 
@@ -50,7 +51,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     }
     await hass.config_entries.async_forward_entry_setups(entry, ["binary_sensor"])
     await async_register_panel(hass, entry)
-    await async_register_websocket(hass)
     await coordinator.async_config_entry_first_refresh()
     return True
 

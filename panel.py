@@ -29,7 +29,7 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry):
         )
 async def async_unregister_panel(hass: HomeAssistant):
     """Unregister the custom panel for the integration."""
-    if hass.data.setdefault("maintenance_manager_panel_registered", True):
+    if hass.data.get("maintenance_manager_panel_registered", False):
         hass.data["maintenance_manager_panel_registered"] = False
         frontend.async_remove_panel(
             hass,

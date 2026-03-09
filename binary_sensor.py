@@ -70,7 +70,6 @@ class TaskSensor(CoordinatorEntity, BinarySensorEntity):
         )
     def _handle_task_state_change(self, task_id: str, state: bool):
         if task_id != self._id:
-            _LOGGER.warning("Received state change for task_id %s, but expected %s", task_id, self._id)
             return
         self._attr_is_on = state
         self.schedule_update_ha_state()

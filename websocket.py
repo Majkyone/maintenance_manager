@@ -57,9 +57,9 @@ def _validate_interval_type(value: str) -> str:
 
 
 def _validate_seasonal_type(value: str) -> str:
-    if value not in VALID_INTERVAL_TYPES:
+    if value not in VALID_SEASONAL_TYPES:
         raise vol.Invalid(
-            f"Invalid Interval Type '{value}'. Allowed values: {sorted(VALID_SEASONAL_TYPES)}."
+            f"Invalid Seasonal Type '{value}'. Allowed values: {sorted(VALID_SEASONAL_TYPES)}."
         )
     return value
 
@@ -153,8 +153,8 @@ def web_socket_detete_task(hass: HomeAssistant, connection: connection.ActiveCon
         connection.send_result(
             msg["id"], {"success": False, "message": "Task not found"})
 
-
-def web_socket_complete_task(hass: HomeAssistant, connection: connection.ActiveConnection, msg: dict[str, Any]):
+@websocket_api.async_response
+async def web_socket_complete_task(hass: HomeAssistant, connection: connection.ActiveConnection, msg: dict[str, Any]):
     task_id = msg["task_id"]
     storage = hass.data[DOMAIN].get("storage")
     if not storage:
@@ -170,6 +170,14 @@ def web_socket_complete_task(hass: HomeAssistant, connection: connection.ActiveC
         else:
             storage.async_create_history(task_id, msg.get(
                 "Completion Notes", "No notes provided."))
+            
+        await hass.services.async_call(
+            "persistent_notification",
+            "dismiss",
+            {
+                "notification_id": f"maintenance_manager_{task_id}",
+            },
+        )
         connection.send_result(msg["id"], {"success": True, "message": msg.get(
             "Completion Notes", "No notes provided.")})
     else:
@@ -229,7 +237,7 @@ def describeTask(msg: dict[str, Any]):
             ).replace(".", "-")
         else:
             # prepisat na hours
-            next_due = timedelta(hours=interval).total_seconds()
+            next_due = int(timedelta(hours=interval).total_seconds())
     task = HomeMaintananceTask(
         id=msg.get("task_id") or str(uuid.uuid4()),
         name=msg["Task Name"],

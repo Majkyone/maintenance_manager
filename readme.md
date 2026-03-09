@@ -251,4 +251,5 @@ This integration was designed with privacy in mind:
 
 - **No external communication** — integration never sends data outside of Home Assistant
 - **Local storage only** — all data stays in HA storage
-- **No cloud dependency** — works fully offline
+- **Notification delivery** — notifications are sent via the Home Assistant mobile app, 
+  which may use external push infrastructure 
