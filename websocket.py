@@ -135,8 +135,8 @@ def web_socket_create_task(hass: HomeAssistant, connection: connection.ActiveCon
     storage.async_create_task(describeTask(msg))
     connection.send_result(msg["id"], {"success": True})
 
-
-def web_socket_detete_task(hass: HomeAssistant, connection: connection.ActiveConnection, msg: dict[str, Any]):
+@websocket_api.async_response
+async def web_socket_detete_task(hass: HomeAssistant, connection: connection.ActiveConnection, msg: dict[str, Any]):
     task_id = msg["task_id"]
     storage = hass.data[DOMAIN].get("storage")
     if not storage:
@@ -147,6 +147,7 @@ def web_socket_detete_task(hass: HomeAssistant, connection: connection.ActiveCon
         return
     if task_id in storage.tasks:
         storage.async_delete_task(task_id)
+        await remove_notification(hass, task_id)
         connection.send_result(msg["id"], {"success": True})
     else:
         _LOGGER.warning("Failed storage async")
@@ -171,13 +172,7 @@ async def web_socket_complete_task(hass: HomeAssistant, connection: connection.A
             storage.async_create_history(task_id, msg.get(
                 "Completion Notes", "No notes provided."))
             
-        await hass.services.async_call(
-            "persistent_notification",
-            "dismiss",
-            {
-                "notification_id": f"maintenance_manager_{task_id}",
-            },
-        )
+        await remove_notification(hass, task_id)
         connection.send_result(msg["id"], {"success": True, "message": msg.get(
             "Completion Notes", "No notes provided.")})
     else:
@@ -264,6 +259,14 @@ def describeTask(msg: dict[str, Any]):
     )
     return task
 
+async def remove_notification(hass: HomeAssistant, task_id: str):
+    await hass.services.async_call(
+            "persistent_notification",
+            "dismiss",
+            {
+                "notification_id": f"maintenance_manager_{task_id}",
+            },
+        )
 
 async def async_register_websocket(hass: HomeAssistant):
     websocket_api.async_register_command(
