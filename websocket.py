@@ -103,9 +103,7 @@ def web_socket_get_tasks(hass: HomeAssistant, connection: connection.ActiveConne
             msg["id"], {"success": False, "message": "Storage not found"}
         )
         return
-    tasks = storage.get_all_tasks()
-
-    result = [attrs.asdict(task) for task in tasks]
+    result = storage.get_all_tasks_frontend()
     connection.send_result(msg["id"], result)
 
 
@@ -117,9 +115,7 @@ def web_socket_get_history(hass: HomeAssistant, connection: connection.ActiveCon
             msg["id"], {"success": False, "message": "Storage not found"}
         )
         return
-    history = storage.get_all_history()
-
-    result = [attrs.asdict(task) for task in history]
+    result = storage.get_all_history()
     connection.send_result(msg["id"], result)
 
 

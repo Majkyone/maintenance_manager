@@ -72,7 +72,7 @@ class MaintananceCoordinator(DataUpdateCoordinator):
                     task.next_due = timedelta(seconds=task.next_due)
                     delta_interval = datetime.now() - datetime.fromisoformat(task.duration_start)
                     task.next_due -= delta_interval
-                    task.next_due = task.next_due.total_seconds()
+                    task.next_due = int(task.next_due.total_seconds())
                     task.duration_start = datetime.now().isoformat()
                     
                 if task.next_due > 0:

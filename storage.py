@@ -1,10 +1,10 @@
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import storage, entity_registry
+from homeassistant.helpers import storage, entity_registry, area_registry
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 import attrs
 from .Models.taskModel import HomeMaintananceTask
 from .Models.historyModel import HomeMaintananceHistory, CompletionRecord
-from .const import DOMAIN, SIGNAL_TASK_CREATED, SIGNAL_TASK_STATE_CHANGED
+from .const import DOMAIN, SIGNAL_TASK_CREATED
 from logging import getLogger
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -31,11 +31,20 @@ class HomeMaintananceStorage:
                 history = HomeMaintananceHistory.from_dict(history_data)
                 self.history[history.id] = history
 
+    def get_all_tasks_frontend(self):
+        result = []
+        for task in self.tasks.values():
+            result.append(self._add_location_name(task))
+        return result
+
     def get_all_tasks(self):
         return list(self.tasks.values())
 
     def get_all_history(self):
-        return list(self.history.values())
+        result = []
+        for history in self.history.values():
+            result.append(self._add_location_name(history))
+        return result
 
     def async_clear_all(self):
         self.history.clear()
@@ -77,12 +86,6 @@ class HomeMaintananceStorage:
         task.next_notification = next_notification
         task.duration_start = None
 
-        async_dispatcher_send(
-                    self.hass,
-                    SIGNAL_TASK_STATE_CHANGED,
-                    task_id,
-                    notified
-                )
         self._async_save_task_history()
         
 
@@ -141,6 +144,10 @@ class HomeMaintananceStorage:
                     existing.next_due += delta * 3600 # prepisat na hours * 3600
                     continue
             if getattr(existing, field) != new_value:
+                if field == "name" and task.id in self.history:
+                    self.history[task.id].name = new_value
+                if field == "location" and task.id in self.history:
+                    self.history[task.id].location = new_value
                 setattr(existing, field, new_value)
         self._async_save_task_history()
 
@@ -151,6 +158,13 @@ class HomeMaintananceStorage:
                 "history": [attrs.asdict(history, recurse=True) for history in self.history.values()]
             })
         )
+
+    def _add_location_name(self, dict):
+        copy = attrs.asdict(dict)
+        registry = area_registry.async_get(self.hass)
+        area = registry.async_get_area(copy["location"])
+        copy["location_name"] = area.name if area else copy["location"]
+        return copy
 
     def describe_entity(self, sensor):
         state = self.hass.states.get(sensor)

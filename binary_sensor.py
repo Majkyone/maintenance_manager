@@ -4,7 +4,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
-from .const import DOMAIN, SIGNAL_TASK_CREATED, SIGNAL_TASK_STATE_CHANGED
+from .const import DOMAIN, SIGNAL_TASK_CREATED
 from .storage import HomeMaintananceTask
 from .coordinator import MaintananceCoordinator
 from logging import getLogger
@@ -44,16 +44,10 @@ class TaskSensor(CoordinatorEntity, BinarySensorEntity):
         self._id = task.id
         self._friendly_name = task.name
         self._attr_is_on = task.notified
+        self._attr_next_due = task.next_due
 
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
-        self.async_on_remove(
-            async_dispatcher_connect(
-                self.hass,
-                SIGNAL_TASK_STATE_CHANGED,
-                self._handle_task_state_change
-            )
-        )
     @property
     def name(self):
         return self._friendly_name
@@ -68,8 +62,15 @@ class TaskSensor(CoordinatorEntity, BinarySensorEntity):
         return DeviceInfo(
             identifiers={(DOMAIN, "main_device")},
         )
-    def _handle_task_state_change(self, task_id: str, state: bool):
-        if task_id != self._id:
-            return
-        self._attr_is_on = state
+    @property
+    def extra_state_attributes(self):
+        return {
+            "next_due": self._attr_next_due
+        }
+
+    def _handle_coordinator_update(self):
+        task = self.hass.data[DOMAIN].get("storage").tasks.get(self._id)
+        self._attr_is_on = task.notified
+        self._attr_next_due = task.next_due
         self.schedule_update_ha_state()
+        
