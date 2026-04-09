@@ -1,0 +1,15 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "name": "Name",
+          "device_id": "Device"
+        },
+        "data_description": {
+          "device_id": "Select the mobile device for notifications"
+        }
+      }
+    }
+  }
+}

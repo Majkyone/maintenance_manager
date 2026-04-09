@@ -24,16 +24,21 @@ This repository contains a solution and implementation for maintaining smart dev
 
 ## 📦 Installation
 
+### HACS Instalation
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Majkyone&repository=hacsMaintenanceManager&category=Integration)
+
+Once installed via HACS, proceed to the **Configuration** section below.
 ### Manual Installation
 
 1. Ensure you have a Home Assistant installation (OS, Container, or Core).
-2. In your Home Assistant configuration folder (the one containing `configuration.yaml`), create a folder called:
+2. In your Home Assistant configuration folder (the one containing `configuration.yaml`), create or open the folder called:
 
    ```
    custom_components/
    ```
 
-3. Download or clone this repository and copy the folder:
+3. Download the <a href="https://github.com/Majkyone/maintenance_manager/releases">latest release</a> and copy only the folder ```maintenance_manager```:
 
    ```
    custom_components/maintenance_manager/

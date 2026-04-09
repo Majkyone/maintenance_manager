@@ -44,9 +44,7 @@ class MaintananceCoordinator(DataUpdateCoordinator):
             if state_obj is None:
                 _LOGGER.warning("Sensor %s not found for task %s", task.sensor, task.name)
                 continue
-            options = ["activity", "action", "states", "turn_on", "condition"]
-            value_to_check = state_obj.attributes.get(task.option) if task.option and task.option not in options else None
-           
+            value_to_check = state_obj.attributes.get(task.option)
             if value_to_check in ("unknown", "unavailable", None):
                 value_to_check = state_obj.state
             if task.control == "number":
@@ -63,8 +61,12 @@ class MaintananceCoordinator(DataUpdateCoordinator):
                 elif task.operator == "equal" and value_to_check == task.value:
                     condition_met = True
             else:
-                if task.value == value_to_check:
-                    condition_met = True
+                if isinstance(task.value, list):
+                    if value_to_check in task.value:
+                        condition_met = True
+                else:
+                    if task.value == value_to_check:
+                        condition_met = True
             if task.type == "interval":
                 if task.duration_start == None or not condition_met:
                     task.duration_start = datetime.now().isoformat()

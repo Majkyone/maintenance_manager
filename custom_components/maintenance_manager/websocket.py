@@ -78,7 +78,7 @@ TASK_FIELDS_SCHEMA = {
     vol.Required("Task Name"): _validate_non_empty_string,
     vol.Optional("Sensor"): str,
     vol.Optional("Control"): str,
-    vol.Optional("Value"): vol.Any(int, str),
+    vol.Optional("Value"): vol.Any(int, str, [str]),
     vol.Optional("Location"): str,
     vol.Optional("Operator"): _validate_operator,
     vol.Optional("Seasonal Task"): bool,
