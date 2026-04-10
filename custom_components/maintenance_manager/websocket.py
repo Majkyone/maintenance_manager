@@ -146,7 +146,7 @@ async def web_socket_detete_task(hass: HomeAssistant, connection: connection.Act
         await remove_notification(hass, task_id)
         connection.send_result(msg["id"], {"success": True})
     else:
-        _LOGGER.warning("Failed storage async")
+        _LOGGER.warning("Task not found for deletion: %s", task_id)
         connection.send_result(
             msg["id"], {"success": False, "message": "Task not found"})
 
@@ -172,7 +172,7 @@ async def web_socket_complete_task(hass: HomeAssistant, connection: connection.A
         connection.send_result(msg["id"], {"success": True, "message": msg.get(
             "Completion Notes", "No notes provided.")})
     else:
-        _LOGGER.warning("Failed storage async")
+        _LOGGER.warning("Task not found for completion: %s", task_id)
         connection.send_result(
             msg["id"], {"success": False, "message": "Task not found"})
 

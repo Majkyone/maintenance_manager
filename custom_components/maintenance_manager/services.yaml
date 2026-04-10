@@ -1,0 +1,19 @@
+complete_task:
+  name: Complete Task
+  description: Marks a task as completed.
+  fields:
+    task_id:
+      name: Task ID
+      description: Select the task to mark as completed.
+      required: true
+      selector:
+        entity:
+          domain: binary_sensor
+          integration: maintenance_manager
+    note:
+      name: Note
+      description: Optional note about the completion.
+      required: false
+      example: "Dust bin was full"
+      selector:
+        text:

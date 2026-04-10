@@ -228,6 +228,12 @@ All time calculations are based on the system time of the Home Assistant instanc
 
 ---
 
+## 🛠 Services
+
+The integration also provides services for interacting with tasks.
+
+- complete_task – allows you to mark a task as completed by selecting the corresponding binary_sensor. 
+
 ## 🔄 Restart Behavior
 
 After Home Assistant restarts:

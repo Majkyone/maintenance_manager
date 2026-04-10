@@ -56,7 +56,7 @@ class HomeMaintananceStorage:
         async_dispatcher_send(self.hass, SIGNAL_TASK_CREATED, task)
         self._async_save_task_history()
 
-    def async_notified_task(self, task_id: str, notified: bool, next_notification: str = None):
+    def async_notified_task(self, task_id: str, notified: bool = False, next_notification: str = None):
         if task_id not in self.tasks:
             _LOGGER.warning("Attempted to update notification state for non-existent task_id: %s", task_id)
             return False
