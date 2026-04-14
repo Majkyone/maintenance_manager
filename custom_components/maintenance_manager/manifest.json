@@ -1,7 +1,7 @@
 {
   "domain": "maintenance_manager",
   "name": "Maintenance Manager",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "documentation": "https://github.com/Majkyone/Maintenance-Manager/",
   "requirements": [],
   "dependencies": [],
