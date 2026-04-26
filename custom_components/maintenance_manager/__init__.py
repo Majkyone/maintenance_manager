@@ -24,6 +24,10 @@ async def async_setup(hass: HomeAssistant, config: dict):
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
+    entry.async_on_unload(
+        entry.add_update_listener(update_listener)
+    )
+
     deviceReg = device_registry.async_get(hass)
     device = deviceReg.async_get_or_create(
         config_entry_id=entry.entry_id,
@@ -36,20 +40,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     
     await storage.async_load()
     
-    dev_reg = device_registry.async_get(hass)
-    device_to_notify = dev_reg.devices.get(entry.data[CONF_DEVICE_ID])
-
+    device_to_notify = await get_device_id(hass, entry)
     if device_to_notify is None:
         _LOGGER.error("Device %s not found", entry.data[CONF_DEVICE_ID])
         return False
-
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN] = {
         "device_id": device.id,
         "storage": storage,
         "coordinator": coordinator,
-        "entities": {},
         "mobile_app_entity_id": slugify(device_to_notify.name),
+        "notifications_enabled": entry.options.get("notifications_enabled", True)
     }
     await hass.config_entries.async_forward_entry_setups(entry, ["binary_sensor"])
     await async_register_panel(hass, entry)
@@ -57,6 +58,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     register_services(hass)
     
     return True
+
+async def update_listener(hass, entry):
+    hass.data[DOMAIN]["notifications_enabled"] = entry.options.get("notifications_enabled", True)
+    new_device_to_notify = get_device_id(hass, entry)
+    if new_device_to_notify is None:
+        _LOGGER.error("Device %s not found", entry.data[CONF_DEVICE_ID])
+        return False
+    hass.data[DOMAIN]["mobile_app_entity_id"] = slugify(new_device_to_notify.name)
+
+async def get_device_id(hass: HomeAssistant, entry: ConfigEntry):
+    dev_reg = device_registry.async_get(hass)
+    device_to_notify = dev_reg.devices.get(entry.options.get(CONF_DEVICE_ID, entry.data.get(CONF_DEVICE_ID)))
+
+    if device_to_notify is None:
+        _LOGGER.error("Device %s not found", entry.data[CONF_DEVICE_ID])
+        return False
+    return device_to_notify
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     unload_ok = await hass.config_entries.async_unload_platforms(

@@ -17,10 +17,12 @@ class MaintananceCoordinator(DataUpdateCoordinator):
         )
         self.notify_service = None
         self.storage = None
+        self.notificatons_enabled = None
 
     async def _async_update_data(self):
         self.notify_service = self.hass.data[DOMAIN].get("mobile_app_entity_id")
         self.storage = self.hass.data[DOMAIN].get("storage")
+        self.notificatons_enabled = self.hass.data[DOMAIN].get("notifications_enabled")
         tasks = self.storage.get_all_tasks()
         
         for task in tasks:
@@ -101,29 +103,30 @@ class MaintananceCoordinator(DataUpdateCoordinator):
         return False
     async def notify_user(self, task):
         self.storage.async_notified_task(task.id, True, (datetime.now() + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0).isoformat())
-        await self.hass.services.async_call(
-            "notify",
-            f"mobile_app_{self.notify_service}",
-            {
-                "title": f"Home Maintenance: {task.name}",
-                "message": f"{task.description}",
-                "data": {
-                    "actions": [
-                        {
-                            "action": "acknowledge",
-                            "title": "Acknowledge"
-                        },
-                    ],
-                    "notification_icon": "mdi:wrench",
-                }
-            },
-        )
-        await self.hass.services.async_call(
-            "persistent_notification",
-            "create",
-            {
-                "title": f"Home Maintenance: {task.name}",
-                "message": f"{task.description}",
-                "notification_id": f"maintenance_manager_{task.id}",
-            },
-        )
+        if self.notificatons_enabled:
+            await self.hass.services.async_call(
+                "notify",
+                f"mobile_app_{self.notify_service}",
+                {
+                    "title": f"Home Maintenance: {task.name}",
+                    "message": f"{task.description}",
+                    "data": {
+                        "actions": [
+                            {
+                                "action": "acknowledge",
+                                "title": "Acknowledge"
+                            },
+                        ],
+                        "notification_icon": "mdi:wrench",
+                    }
+                },
+            )
+            await self.hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": f"Home Maintenance: {task.name}",
+                    "message": f"{task.description}",
+                    "notification_id": f"maintenance_manager_{task.id}",
+                },
+            )
