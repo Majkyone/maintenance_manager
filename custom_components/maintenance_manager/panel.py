@@ -1,3 +1,7 @@
+"""
+Author: Marián Šuľa
+Description: Panel management for the Device Maintenance Manager integration."""
+
 import os
 import time
 from homeassistant.components import frontend, panel_custom
@@ -11,13 +15,13 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry):
         os.path.dirname(__file__),
         "dist"
     )
-
+    # Ensure the panel is only registered once
     if not hass.data.setdefault("maintenance_manager_panel_registered", False):
         await hass.http.async_register_static_paths([
             StaticPathConfig(API_PATH, web_dir, cache_headers=False)
         ])
         hass.data["maintenance_manager_panel_registered"] = True
-
+        # Register the panel with Home Assistant
         await panel_custom.async_register_panel(
             hass,
             frontend_url_path=PANEL_PATH,

@@ -1,3 +1,8 @@
+"""
+Author: Marián Šuľa
+Description: Initialization and setup of the Device Maintenance Manager integration for Home Assistant.
+"""
+
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import device_registry, entity_registry
@@ -16,18 +21,17 @@ import logging
 _LOGGER = logging.getLogger("custom_components.maintenance_manager")
 
 async def async_setup(hass: HomeAssistant, config: dict):
-    """Initial setup of the integration (empty if only Config Flow)."""
-    # Inicializácia dátového priestoru
+    """Initial setup of the integration."""
     await async_register_websocket(hass)
     
     return True
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-
+    """Set up the integration from a config entry."""
     entry.async_on_unload(
         entry.add_update_listener(update_listener)
     )
-
+    # Register the main device for the integration
     deviceReg = device_registry.async_get(hass)
     device = deviceReg.async_get_or_create(
         config_entry_id=entry.entry_id,
@@ -40,10 +44,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     
     await storage.async_load()
     
-    device_to_notify = await get_device_id(hass, entry)
+    device_to_notify = get_device_id(hass, entry)
     if device_to_notify is None:
         _LOGGER.error("Device %s not found", entry.data[CONF_DEVICE_ID])
         return False
+    # Store important references in hass.data for later use
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN] = {
         "device_id": device.id,
@@ -60,23 +65,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     return True
 
 async def update_listener(hass, entry):
+    """Handle options update."""
     hass.data[DOMAIN]["notifications_enabled"] = entry.options.get("notifications_enabled", True)
     new_device_to_notify = get_device_id(hass, entry)
     if new_device_to_notify is None:
         _LOGGER.error("Device %s not found", entry.data[CONF_DEVICE_ID])
-        return False
+        return
     hass.data[DOMAIN]["mobile_app_entity_id"] = slugify(new_device_to_notify.name)
 
-async def get_device_id(hass: HomeAssistant, entry: ConfigEntry):
+def get_device_id(hass: HomeAssistant, entry: ConfigEntry):
+    """Helper function to get the device to notify based on the config entry."""
     dev_reg = device_registry.async_get(hass)
     device_to_notify = dev_reg.devices.get(entry.options.get(CONF_DEVICE_ID, entry.data.get(CONF_DEVICE_ID)))
-
     if device_to_notify is None:
-        _LOGGER.error("Device %s not found", entry.data[CONF_DEVICE_ID])
-        return False
+        return None
     return device_to_notify
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
+    """Unload the config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(
         entry,
         ["binary_sensor"],
@@ -86,12 +92,14 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     return unload_ok
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry):
+    """Remove the config entry and clear stored data."""
     storage = hass.data.get(DOMAIN, {}).get("storage")
     if storage:
         storage.async_clear_all()
     hass.data.pop(DOMAIN, None)
 
 def register_services(hass: HomeAssistant):
+    """Register custom services for the integration."""
     async def handle_complete_task(call: ServiceCall):
         entity_id = call.data.get("task_id")
         note = call.data.get("note")

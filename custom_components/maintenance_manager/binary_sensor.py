@@ -1,3 +1,7 @@
+"""
+Author: Marián Šuľa
+Description: Binary sensor entity representing maintenance tasks and their notification status."""
+
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
@@ -13,7 +17,7 @@ _LOGGER = getLogger("custom_components.maintenance_manager")
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-
+    """Set up binary sensor entities for maintenance tasks."""
     storage = hass.data[DOMAIN].get("storage")
     coordinator = hass.data[DOMAIN].get("coordinator")
     if not storage:
@@ -27,7 +31,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     for task in storage.get_all_tasks():
         sensor = TaskSensor(hass, coordinator, task)
         async_add_entities([sensor])
-
+    # Register a listener for new tasks created via the UI
     async def handle_new_task(task):
         sensor = TaskSensor(hass, coordinator, task)
         async_add_entities([sensor])
@@ -37,7 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     )
 
 class TaskSensor(CoordinatorEntity, BinarySensorEntity):
-
+    """Binary sensor entity representing a maintenance task status."""
     def __init__(self, hass: HomeAssistant, coordinator: MaintananceCoordinator, task: HomeMaintananceTask):
         super().__init__(coordinator)
         self.hass = hass
@@ -69,6 +73,7 @@ class TaskSensor(CoordinatorEntity, BinarySensorEntity):
         }
 
     def _handle_coordinator_update(self):
+        """Update the sensor state when the coordinator updates."""
         task = self.hass.data[DOMAIN].get("storage").tasks.get(self._id)
         self._attr_is_on = task.notified
         self._attr_next_due = task.next_due

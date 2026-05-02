@@ -1,3 +1,8 @@
+"""
+Author: Marián Šuľa
+Description: Constants for the Device Maintenance Manager integration.
+"""
+
 from typing import Final
 DOMAIN: Final = "maintenance_manager"
 API_PATH: Final = "/maintenance_manager"

@@ -1,3 +1,8 @@
+"""
+Author: Marián Šuľa
+Description: Storage management for maintenance tasks and their history, as well as handling task completion and notification status.
+"""
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import storage, entity_registry, area_registry
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -15,6 +20,7 @@ _LOGGER = getLogger("custom_components.maintenance_manager")
 
 
 class HomeMaintananceStorage:
+    """Class responsible for manafing maintenance tasks and their history"""
     def __init__(self, hass: HomeAssistant):
         self.hass = hass
         self.store = storage.Store(hass, 1, f"{DOMAIN}.storage")
@@ -22,6 +28,7 @@ class HomeMaintananceStorage:
         self.history: dict[str, HomeMaintananceHistory] = {}
 
     async def async_load(self):
+        """Load tasks and history from HA persistant storage."""
         data = await self.store.async_load()
         if data:
             for task_data in data.get("tasks", []):
@@ -32,37 +39,44 @@ class HomeMaintananceStorage:
                 self.history[history.id] = history
 
     def get_all_tasks_frontend(self):
+        """Get all tasks with location names for frontend display."""
         result = []
         for task in self.tasks.values():
             result.append(self._add_location_name(task))
         return result
 
     def get_all_tasks(self):
+        """Get all tasks without modification, used for internal logic."""
         return list(self.tasks.values())
 
     def get_all_history(self):
+        """Get all task history with location names for frontend display."""
         result = []
         for history in self.history.values():
             result.append(self._add_location_name(history))
         return result
 
     def async_clear_all(self):
+        """Clear all tasks and history."""
         self.history.clear()
         self.tasks.clear()
         self._async_save_task_history()
 
     def async_create_task(self, task: HomeMaintananceTask):
+        """Create a new maintenance task and save it."""
         self.tasks[task.id] = task
         async_dispatcher_send(self.hass, SIGNAL_TASK_CREATED, task)
         self._async_save_task_history()
 
     def async_notified_task(self, task_id: str, notified: bool = False, next_notification: str = None):
+        """Update the notification status of a task and save the change."""
         if task_id not in self.tasks:
             _LOGGER.warning("Attempted to update notification state for non-existent task_id: %s", task_id)
             return False
         
         task = self.tasks[task_id]
         if not notified:
+            # Set reactivation time for seasonal tasks
             if task.seasonal:
                 interval = task.seasonal_interval
                 unit = task.seasonal_type
@@ -70,6 +84,7 @@ class HomeMaintananceStorage:
                 task.reactivate = str(
                     datetime.now() + relativedelta(**{unit: interval})
                 )
+            # Set next due date for interval-based tasks
             if task.type == "interval":
                 interval = task.seasonal_interval
                 unit = task.seasonal_type
@@ -90,6 +105,7 @@ class HomeMaintananceStorage:
         
 
     def async_create_history(self, history_id: str, note: str):
+        """Create a new history record for a completed task."""
         task = self.tasks[history_id]
         history = HomeMaintananceHistory(
             id=task.id,
@@ -102,11 +118,13 @@ class HomeMaintananceStorage:
         self.async_notified_task(history_id, False)
 
     def async_add_completion_date(self, history_id: str, note: str):
+        """Add a completion date to an existing history record."""
         self.history[history_id].completion_dates.append(
             CompletionRecord(datetime.now().replace(microsecond=0), note))
         self.async_notified_task(history_id, False)
 
     def async_delete_task(self, task_id: str):
+        """Delete a task and its history, and remove the associated entity."""
         if task_id not in self.tasks:
             _LOGGER.warning("Attempted to delete non-existent task_id: %s", task_id)
             return False
@@ -115,14 +133,7 @@ class HomeMaintananceStorage:
             self.history.pop(task_id)
         er = entity_registry.async_get(self.hass)
 
-        task_to_remove = next(
-            (
-                entry
-                for entry in er.entities.values()
-                if entry.unique_id == task_id and entry.platform == DOMAIN
-            ),
-            None,
-        )
+        task_to_remove = self.get_entity_by_task_id(task_id)
 
         if task_to_remove is None:
             _LOGGER.warning("Failed to find entity to remove for task_id: %s", task_id)
@@ -132,8 +143,10 @@ class HomeMaintananceStorage:
         self._async_save_task_history()
 
     def async_edit_task(self, task: HomeMaintananceTask):
+        """Edit an existing task's attributes and save the changes."""
         existing = self.tasks[task.id]
         old_interval = existing.seasonal_interval
+        # Update only editable fields of the task.
         for field in HomeMaintananceTask.EDITABLE_FIELDS:
             new_value = getattr(task, field)
             if field == "next_due" and existing.notified:
@@ -141,7 +154,7 @@ class HomeMaintananceStorage:
             if field == "next_due" and existing.seasonal_type == "runtime":
                 if isinstance(existing.next_due, (int, float)):
                     delta = task.seasonal_interval - old_interval
-                    existing.next_due += delta * 3600 # prepisat na hours * 3600
+                    existing.next_due += delta * 3600
                     continue
             if getattr(existing, field) != new_value:
                 if field == "name" and task.id in self.history:
@@ -152,6 +165,7 @@ class HomeMaintananceStorage:
         self._async_save_task_history()
 
     def _async_save_task_history(self):
+        """Save the current tasks and history to HA persistant storage."""
         self.hass.async_create_task(
             self.store.async_save({
                 "tasks": [attrs.asdict(task) for task in self.tasks.values()],
@@ -160,13 +174,28 @@ class HomeMaintananceStorage:
         )
 
     def _add_location_name(self, dict):
+        """Add location name to a task or history dict based on its location ID."""
         copy = attrs.asdict(dict)
         registry = area_registry.async_get(self.hass)
         area = registry.async_get_area(copy["location"])
         copy["location_name"] = area.name if area else copy["location"]
         return copy
 
+    def get_entity_by_task_id(self, task_id: str):
+        """Get the entity registry entry for a given task ID."""
+        er = entity_registry.async_get(self.hass)
+
+        entity = next(
+            (
+                entry
+                for entry in er.entities.values()
+                if entry.unique_id == task_id and entry.platform == DOMAIN
+            ),
+            None,
+        )
+        return entity
     def describe_entity(self, sensor):
+        """Describe an entity's attributes for frontend control generation."""
         state = self.hass.states.get(sensor)
         if state is None:
             _LOGGER.warning("Entity %s not found", sensor)

@@ -4148,7 +4148,7 @@ const Ml = { class: "tablet:flex tablet:gap-8 tablet:flex-row grid grid-cols-1 g
 }), Wl = (e, t) => e.callWS({
   type: "maintenance_manager/edit_task",
   ...t
-}), Kl = ".header[data-v-8db11068]{background-color:var(--app-header-background-color);color:var(--app-header-text-color, white);border-bottom:var(--app-header-border-bottom, none)}.toolbar[data-v-8db11068]{height:var(--header-height);display:flex;align-items:center;font-size:20px;padding:0 16px;font-weight:400;box-sizing:border-box}.main-title[data-v-8db11068]{line-height:20px;flex-grow:1}.version[data-v-8db11068]{font-size:14px;font-weight:500;color:rgba(var(--rgb-text-primary-color),.9)}", si = (e, t) => {
+}), Kl = ".header[data-v-d7a521f8]{background-color:var(--app-header-background-color);color:var(--app-header-text-color, white);border-bottom:var(--app-header-border-bottom, none)}.toolbar[data-v-d7a521f8]{height:var(--header-height);display:flex;align-items:center;font-size:20px;padding:0 16px;font-weight:400;box-sizing:border-box}.main-title[data-v-d7a521f8]{line-height:20px;flex-grow:1}.version[data-v-d7a521f8]{font-size:14px;font-weight:500;color:rgba(var(--rgb-text-primary-color),.9)}", si = (e, t) => {
   const s = e.__vccOpts || e;
   for (const [n, o] of t)
     s[n] = o;
@@ -4176,12 +4176,12 @@ const Ml = { class: "tablet:flex tablet:gap-8 tablet:flex-row grid grid-cols-1 g
             ".narrow": t.narrow
           }, null, 40, [".hass", ".narrow"]),
           n[0] || (n[0] = g("div", { class: "mobileL:ml-6 main-title" }, " Device Maintenance Manager ", -1)),
-          n[1] || (n[1] = g("div", { class: "version" }, " v1.0.3 ", -1))
+          n[1] || (n[1] = g("div", { class: "version" }, " v1.0.4 ", -1))
         ])
       ]);
     };
   }
-}, Jl = /* @__PURE__ */ si(Gl, [["styles", [Kl]], ["__scopeId", "data-v-8db11068"]]), Yl = { slot: "header" }, Xl = { class: "grid items-center grid-cols-1 gap-1 tablet:grid-cols-4 tablet:gap-0" }, Zl = { class: "text-2xl font-medium" }, Ql = { class: "flex items-center" }, ea = {
+}, Jl = /* @__PURE__ */ si(Gl, [["styles", [Kl]], ["__scopeId", "data-v-d7a521f8"]]), Yl = { slot: "header" }, Xl = { class: "grid items-center grid-cols-1 gap-1 tablet:grid-cols-4 tablet:gap-0" }, Zl = { class: "text-2xl font-medium" }, Ql = { class: "flex items-center" }, ea = {
   key: 0,
   class: "text-xl font-light"
 }, ta = { class: "flex items-center justify-end gap-2 mr-5" }, sa = { class: "flex items-center gap-1" }, na = { class: "text-xl font-light mt-2 mb-6" }, oa = { class: "bg-blue-50 border-2 border-blue-300 rounded-2xl p-4 text-lg" }, ia = { class: "hidden tablet:block mb-1" }, ra = { class: "text-blue-600 ml-1" }, la = { class: "text-blue-600 ml-1" }, aa = {
@@ -4587,9 +4587,7 @@ function Na(e, t, s, n) {
           name: "Sensor",
           required: !0,
           selector: {
-            entity: {
-              // domain: ["sensor", "binary_sensor"]
-            }
+            entity: {}
           }
         },
         ...e.value && e.value.length > 1 ? [

@@ -1,5 +1,8 @@
+"""
+Author: Marián Šuľa
+Description: Websocket API for Device Maintenance Manager"""
+
 import uuid
-import attrs
 from typing import Any
 import voluptuous as vol
 from homeassistant.components import websocket_api
@@ -20,19 +23,22 @@ VALID_OPERATORS = {"equal", "above", "below", ""}
 VALID_TASK_TYPES = {"interval", "conditional"}
 
 
-def _validate_positive_int(value: int) -> int:
+def _validate_positive_int(value: int):
+    """Vlidate only positive integers"""
     if value < 0:
         raise vol.Invalid(f"Value must be greater or equal to 0, got {value}.")
     return value
 
 
-def _validate_non_empty_string(value: str) -> str:
+def _validate_non_empty_string(value: str):
+    """Validate that the string is not empty or just whitespace."""
     if not value or not value.strip():
         raise vol.Invalid("Value must not be empty.")
     return value.strip()
 
 
-def _validate_task_type(value: str) -> str:
+def _validate_task_type(value: str):
+    """Validate that the task type is one of the allowed types."""
     if value not in VALID_TASK_TYPES:
         raise vol.Invalid(
             f"Invalid Type '{value}'. Allowed values: {sorted(VALID_TASK_TYPES)}."
@@ -40,7 +46,8 @@ def _validate_task_type(value: str) -> str:
     return value
 
 
-def _validate_operator(value: str) -> str:
+def _validate_operator(value: str):
+    """Validate that the operator is one of the allowed operators."""
     if value not in VALID_OPERATORS:
         raise vol.Invalid(
             f"Invalid Operator '{value}'. Allowed values: {sorted(VALID_OPERATORS)}."
@@ -48,7 +55,8 @@ def _validate_operator(value: str) -> str:
     return value
 
 
-def _validate_interval_type(value: str) -> str:
+def _validate_interval_type(value: str):
+    """Validate that the interval type is one of the allowed interval types."""
     if value not in VALID_INTERVAL_TYPES:
         raise vol.Invalid(
             f"Invalid Interval Type '{value}'. Allowed values: {sorted(VALID_INTERVAL_TYPES)}."
@@ -56,7 +64,8 @@ def _validate_interval_type(value: str) -> str:
     return value
 
 
-def _validate_seasonal_type(value: str) -> str:
+def _validate_seasonal_type(value: str):
+    """Validate that the seasonal type is one of the allowed seasonal types."""
     if value not in VALID_SEASONAL_TYPES:
         raise vol.Invalid(
             f"Invalid Seasonal Type '{value}'. Allowed values: {sorted(VALID_SEASONAL_TYPES)}."
@@ -64,14 +73,15 @@ def _validate_seasonal_type(value: str) -> str:
     return value
 
 
-def _validate_duration_type(value: str) -> str:
+def _validate_duration_type(value: str):
+    """Validate that the duration type is one of the allowed duration types."""
     if value not in VALID_DURATION_TYPES:
         raise vol.Invalid(
             f"Invalid Duration Type '{value}'. Allowed values: {sorted(VALID_DURATION_TYPES)}."
         )
     return value
 
-
+# Define a schema for task fields with appropriate validation
 TASK_FIELDS_SCHEMA = {
     vol.Optional("Description"): str,
     vol.Required("Type"): _validate_task_type,
@@ -96,6 +106,7 @@ TASK_FIELDS_SCHEMA = {
 
 
 def web_socket_get_tasks(hass: HomeAssistant, connection: connection.ActiveConnection, msg: dict[str, Any]):
+    """Handle websocket command to get all tasks."""
     storage = hass.data[DOMAIN].get("storage")
     if not storage:
         _LOGGER.error("Storage not found in hass.data for domain %s", DOMAIN)
@@ -108,6 +119,7 @@ def web_socket_get_tasks(hass: HomeAssistant, connection: connection.ActiveConne
 
 
 def web_socket_get_history(hass: HomeAssistant, connection: connection.ActiveConnection, msg: dict[str, Any]):
+    """Handle websocket command to get task history."""
     storage = hass.data[DOMAIN].get("storage")
     if not storage:
         _LOGGER.error("Storage not found in hass.data for domain %s", DOMAIN)
@@ -120,7 +132,7 @@ def web_socket_get_history(hass: HomeAssistant, connection: connection.ActiveCon
 
 
 def web_socket_create_task(hass: HomeAssistant, connection: connection.ActiveConnection, msg: dict[str, Any]):
-
+    """Handle websocket command to create a new task."""
     storage = hass.data[DOMAIN].get("storage")
     if not storage:
         _LOGGER.error("Storage not found in hass.data for domain %s", DOMAIN)
@@ -131,8 +143,9 @@ def web_socket_create_task(hass: HomeAssistant, connection: connection.ActiveCon
     storage.async_create_task(describeTask(msg))
     connection.send_result(msg["id"], {"success": True})
 
-@websocket_api.async_response
+@websocket_api.async_response # Decorator to indicate this is an async websocket handler
 async def web_socket_detete_task(hass: HomeAssistant, connection: connection.ActiveConnection, msg: dict[str, Any]):
+    """Handle websocket command to delete a task."""
     task_id = msg["task_id"]
     storage = hass.data[DOMAIN].get("storage")
     if not storage:
@@ -150,8 +163,9 @@ async def web_socket_detete_task(hass: HomeAssistant, connection: connection.Act
         connection.send_result(
             msg["id"], {"success": False, "message": "Task not found"})
 
-@websocket_api.async_response
+@websocket_api.async_response # Decorator to indicate this is an async websocket handler
 async def web_socket_complete_task(hass: HomeAssistant, connection: connection.ActiveConnection, msg: dict[str, Any]):
+    # Handle websocket command to mark a task as completed.
     task_id = msg["task_id"]
     storage = hass.data[DOMAIN].get("storage")
     if not storage:
@@ -178,6 +192,7 @@ async def web_socket_complete_task(hass: HomeAssistant, connection: connection.A
 
 
 def web_socket_get_attributes(hass: HomeAssistant, connection: connection.ActiveConnection, msg: dict[str, Any]):
+    """Handle websocket command to get attributes of a task's sensor."""
     storage = hass.data[DOMAIN].get("storage")
     if not storage:
         _LOGGER.error("Storage not found in hass.data for domain %s", DOMAIN)
@@ -191,7 +206,7 @@ def web_socket_get_attributes(hass: HomeAssistant, connection: connection.Active
 
 
 def web_socket_edit_task(hass: HomeAssistant, connection: connection.ActiveConnection, msg: dict[str, Any]):
-
+    """Handle websocket command to edit an existing task."""
     storage = hass.data[DOMAIN].get("storage")
     if not storage:
         _LOGGER.error("Storage not found in hass.data for domain %s", DOMAIN)
@@ -204,6 +219,7 @@ def web_socket_edit_task(hass: HomeAssistant, connection: connection.ActiveConne
 
 
 def describeTask(msg: dict[str, Any]):
+    """Helper function to create a HomeMaintananceTask object from websocket message data."""
     type = msg["Type"]
     duration = msg.get("Duration", 0)
 
@@ -211,11 +227,12 @@ def describeTask(msg: dict[str, Any]):
     last_completed = msg.get("Last Completed", ""),
     last_completed_str = last_completed[0] if last_completed else None
     next_due = ""
+    # Convert duration for easier internal handling
     if duration_type == "minutes":
         duration = duration * 60
     elif duration_type == "hours":
         duration = duration * 3600
-
+    # Calculate next due date for interval and runtime-based tasks
     if type == "interval":
         interval = msg["Repeat Every"]
         unit = msg["Interval Type"]
@@ -227,8 +244,8 @@ def describeTask(msg: dict[str, Any]):
                  {unit: interval})).strftime("%Y.%m.%d")
             ).replace(".", "-")
         else:
-            # prepisat na hours
             next_due = int(timedelta(hours=interval).total_seconds())
+    # Task representation
     task = HomeMaintananceTask(
         id=msg.get("task_id") or str(uuid.uuid4()),
         name=msg["Task Name"],
@@ -256,6 +273,7 @@ def describeTask(msg: dict[str, Any]):
     return task
 
 async def remove_notification(hass: HomeAssistant, task_id: str):
+    """Helper function to remove a persistent notification for a task from Home Assistant UI."""
     await hass.services.async_call(
             "persistent_notification",
             "dismiss",
@@ -265,6 +283,7 @@ async def remove_notification(hass: HomeAssistant, task_id: str):
         )
 
 async def async_register_websocket(hass: HomeAssistant):
+    """Register websocket commands for the Device Maintenance Manager."""
     websocket_api.async_register_command(
         hass,
         "maintenance_manager/get_tasks",

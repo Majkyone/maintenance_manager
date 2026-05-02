@@ -1,3 +1,8 @@
+"""
+Author: Marián Šuľa
+Description: Evaluation of the maintenance tasks and notification logic for the Device Maintenance Manager integration.
+"""
+
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.core import HomeAssistant
 from .const import DOMAIN
@@ -8,6 +13,7 @@ _LOGGER = logging.getLogger("custom_components.maintenance_manager")
 
 
 class MaintananceCoordinator(DataUpdateCoordinator):
+    """Coordinator for evaluating maintenance tasks and handling notifications."""
     def __init__(self, hass: HomeAssistant):
         super().__init__(
             hass,
@@ -20,35 +26,39 @@ class MaintananceCoordinator(DataUpdateCoordinator):
         self.notificatons_enabled = None
 
     async def _async_update_data(self):
+        """Evaluate maintenance tasks and send notifications if needed."""
         self.notify_service = self.hass.data[DOMAIN].get("mobile_app_entity_id")
         self.storage = self.hass.data[DOMAIN].get("storage")
         self.notificatons_enabled = self.hass.data[DOMAIN].get("notifications_enabled")
         tasks = self.storage.get_all_tasks()
         
         for task in tasks:
-            # seasonal task
+            # Seasonal task
             if task.reactivate is not None and datetime.fromisoformat(task.reactivate) >= datetime.now():
                 continue
-            # notify again
+            # Notify again
             if task.notified and task.next_notification is not None and datetime.fromisoformat(task.next_notification) <= datetime.now():
                 await self.notify_user(task)
                 continue
-            # skip
+            # Skip
             if task.notified:
                 continue
-            # interval check
+            # Interval check
             if task.type == "interval" and task.seasonal_type != "runtime":
                 if datetime.fromisoformat(task.next_due) + timedelta(hours=9) <= datetime.now():
                     await self.notify_user(task)
                 continue
             condition_met = False
+            # Get sensor value to check
             state_obj = self.hass.states.get(task.sensor)
             if state_obj is None:
                 _LOGGER.warning("Sensor %s not found for task %s", task.sensor, task.name)
                 continue
             value_to_check = state_obj.attributes.get(task.option)
+            # Value is not available in attributes, use state value
             if value_to_check in ("unknown", "unavailable", None):
                 value_to_check = state_obj.state
+            # Evaluate condition
             if task.control == "number":
                 try:
                     value_to_check = float(value_to_check)
@@ -69,6 +79,7 @@ class MaintananceCoordinator(DataUpdateCoordinator):
                 else:
                     if task.value == value_to_check:
                         condition_met = True
+            # Handle runtime-based interval tasks
             if task.type == "interval":
                 if task.duration_start == None or not condition_met:
                     task.duration_start = datetime.now().isoformat()
@@ -80,28 +91,30 @@ class MaintananceCoordinator(DataUpdateCoordinator):
                     task.duration_start = datetime.now().isoformat()
                     
                 if task.next_due > 0:
-                    self.storage._async_save_task_history() # mozno nebude treba
+                    self.storage._async_save_task_history()
                 else:
                     await self.notify_user(task)
                 continue
-
+            # Reset duration start if condition is not met
             if not condition_met and task.duration_condition:
                 task.duration_start = None
-                self.storage._async_save_task_history() # mozno nebude treba
-
+                self.storage._async_save_task_history()
+            # Notify if condition is met
             if condition_met:
                 if task.duration_condition and not self._duration_check(task):
                     continue
                 await self.notify_user(task)
 
     def _duration_check(self, task):
+        """Check if the duration condition is met for a task."""
         if task.duration_start is None:
             task.duration_start = datetime.now().isoformat()
-            self.storage._async_save_task_history() # mozno nebude treba
+            self.storage._async_save_task_history()
         if datetime.now() >= datetime.fromisoformat(task.duration_start) + timedelta(seconds=task.duration):
             return True
         return False
     async def notify_user(self, task):
+        """Notify the user about a maintenance task."""
         self.storage.async_notified_task(task.id, True, (datetime.now() + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0).isoformat())
         if self.notificatons_enabled:
             await self.hass.services.async_call(
