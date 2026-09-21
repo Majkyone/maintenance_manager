@@ -76,7 +76,7 @@ async def update_listener(hass, entry):
 def get_device_id(hass: HomeAssistant, entry: ConfigEntry):
     """Helper function to get the device to notify based on the config entry."""
     dev_reg = device_registry.async_get(hass)
-    device_to_notify = dev_reg.devices.get(entry.options.get(CONF_DEVICE_ID, entry.data.get(CONF_DEVICE_ID)))
+    device_to_notify = dev_reg.async_get(entry.options.get(CONF_DEVICE_ID, entry.data.get(CONF_DEVICE_ID)))
     if device_to_notify is None:
         return None
     return device_to_notify

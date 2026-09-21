@@ -22,7 +22,7 @@ const props = defineProps({
                 Device Maintenance Manager
             </div>
             <div class="version">
-                v1.0.4
+                v1.0.5
             </div>
         </div>
     </div>
